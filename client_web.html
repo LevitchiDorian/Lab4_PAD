@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8" />
+    <title>Client Web - Employees</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f4f6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            background: #ffffff;
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        label {
+            display: inline-block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            padding: 7px 10px;
+            border-radius: 5px;
+            border: 1px solid #d1d5db;
+            width: 200px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 7px 14px;
+            border-radius: 5px;
+            border: none;
+            background: #2563eb;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        #output {
+            margin-top: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 80px;
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 6px 8px;
+            text-align: left;
+        }
+
+        th {
+            background: #f3f4f6;
+        }
+
+        .small-info {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .status-line {
+            margin-top: 5px;
+            font-size: 13px;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Client Web - Sistem CRUD cu Load Balancer</h1>
+    <p class="small-info">
+        Această pagină HTML trimite cereri către API-ul tău prin Load Balancer (port 5000).
+    </p>
+
+    <!-- Config general -->
+    <div class="section">
+        <strong>Config API:</strong>
+        <div class="small-info">
+            API Base URL: <span id="api-base-url"></span>
+        </div>
+    </div>
+
+    <!-- Căutare după ID -->
+    <div class="section">
+        <h2>Căutare angajat după ID</h2>
+        <label for="empIdInput">ID angajat:</label>
+        <input type="number" id="empIdInput" placeholder="ex: 1" />
+        <button onclick="getEmployeeById()">Caută după ID</button>
+    </div>
+
+    <!-- Lista completă -->
+    <div class="section">
+        <h2>Lista tuturor angajaților</h2>
+        <button onclick="getAllEmployees()">Afișează toți</button>
+    </div>
+
+    <!-- Adăugare angajat -->
+    <div class="section">
+        <h2>Adaugă angajat nou</h2>
+        <div>
+            <label for="newName">Nume:</label>
+            <input type="text" id="newName" placeholder="ex: Ana Popescu" />
+        </div>
+        <div style="margin-top: 8px;">
+            <label for="newPosition">Poziție:</label>
+            <input type="text" id="newPosition" placeholder="ex: Developer" />
+        </div>
+        <div style="margin-top: 10px;">
+            <button onclick="addEmployee()">Adaugă</button>
+        </div>
+    </div>
+
+    <!-- Zona de afișare -->
+    <div class="section">
+        <h2>Rezultat</h2>
+        <div id="status" class="status-line"></div>
+        <div id="output">Aici vor apărea rezultatele cererilor.</div>
+    </div>
+</div>
+
+<script>
+    // !!! SCHIMBĂ CU IP-UL DROPLET-ULUI TĂU !!!
+    const API_BASE_URL = "https://load-balancer-url.railway.app";
+
+    document.getElementById("api-base-url").innerText = API_BASE_URL;
+
+    async function getEmployeeById() {
+        const id = document.getElementById("empIdInput").value.trim();
+        if (!id) {
+            showStatus("Te rog introdu un ID.", true);
+            return;
+        }
+
+        try {
+            const resp = await fetch(`${API_BASE_URL}/employee/${id}`);
+            await handleResponse(resp);
+        } catch (e) {
+            showStatus("Eroare de rețea: " + e, true);
+        }
+    }
+
+    async function getAllEmployees() {
+        try {
+            const resp = await fetch(`${API_BASE_URL}/employees`);
+            await handleResponse(resp);
+        } catch (e) {
+            showStatus("Eroare de rețea: " + e, true);
+        }
+    }
+
+    async function addEmployee() {
+        const name = document.getElementById("newName").value.trim();
+        const position = document.getElementById("newPosition").value.trim();
+
+        if (!name || !position) {
+            showStatus("Numele și poziția sunt obligatorii.", true);
+            return;
+        }
+
+        const payload = { name, position };
+
+        try {
+            const resp = await fetch(`${API_BASE_URL}/employee`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+            await handleResponse(resp);
+        } catch (e) {
+            showStatus("Eroare de rețea: " + e, true);
+        }
+    }
+
+    async function handleResponse(resp) {
+        const dbInfo = resp.headers.get("X-Database-Info") || "N/A";
+        let data = null;
+        try {
+            data = await resp.json();
+        } catch {
+            data = null;
+        }
+
+        if (!resp.ok) {
+            if (data && data.error) {
+                showStatus(`Eroare HTTP ${resp.status} | DB: ${dbInfo} | Mesaj: ${data.error}`, true);
+                document.getElementById("output").textContent = "";
+            } else {
+                showStatus(`Eroare HTTP ${resp.status} | DB: ${dbInfo}`, true);
+                document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+            }
+            return;
+        }
+
+        showStatus(`Succes HTTP ${resp.status} | ${dbInfo}`, false);
+        renderData(data);
+    }
+
+    function renderData(data) {
+        const output = document.getElementById("output");
+
+        // Dacă e listă de angajați
+        if (Array.isArray(data)) {
+            if (data.length === 0) {
+                output.textContent = "Nu există angajați în baza de date.";
+                return;
+            }
+            output.innerHTML = buildTableHtml(data);
+        } else if (data && typeof data === "object") {
+            // Un singur angajat sau un obiect generic
+            if ("id" in data && "name" in data && "position" in data) {
+                output.innerHTML = buildTableHtml([data]);
+            } else {
+                output.textContent = JSON.stringify(data, null, 2);
+            }
+        } else {
+            output.textContent = "Răspuns necunoscut de la server.";
+        }
+    }
+
+    function buildTableHtml(employees) {
+        let html = "<table><thead><tr><th>ID</th><th>Nume</th><th Pozitie</th></tr></thead><tbody>";
+        for (const emp of employees) {
+            html += `<tr>
+                        <td>${emp.id ?? ""}</td>
+                        <td>${emp.name ?? ""}</td>
+                        <td>${emp.position ?? ""}</td>
+                     </tr>`;
+        }
+        html += "</tbody></table>";
+        return html;
+    }
+
+    function showStatus(msg, isError) {
+        const status = document.getElementById("status");
+        status.style.color = isError ? "#b91c1c" : "#065f46";
+        status.textContent = msg;
+    }
+</script>
+</body>
+</html>
