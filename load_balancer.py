@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # BACKEND_SERVERS va fi un string de forma:
 # "https://server1.up.railway.app,https://server2.up.railway.app"
-servers_env = os.environ.get("BACKEND_SERVERS", "server1-production-9ae3.up.railway.app,server2-production-00a0.up.railway.app")
+servers_env = os.environ.get("BACKEND_SERVERS", "https://server1-production-9ae3.up.railway.app,https://server2-production-00a0.up.railway.app")
 SERVERS = [s.strip() for s in servers_env.split(",") if s.strip()]
 server_pool = cycle(SERVERS)
 
