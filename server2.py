@@ -1,11 +1,13 @@
+# server2.py
 from flask import Flask, request, jsonify, make_response
 import psycopg2
 import redis
 import json
 import os
 
-SERVER_PORT = int(os.environ.get("PORT", 5002))
-DB_NAME = os.environ.get("DB_NAME", "db2")
+SERVER_PORT = int(os.environ.get("PORT", 5002))   # Railway pune PORT, local fallback=5002
+DB_NAME = os.environ.get("DB_NAME", "db2")        # pentru local, în cloud vine "railway"
+
 app = Flask(__name__)
 
 DB_CONFIG = {
@@ -31,12 +33,29 @@ redis_cache = redis.Redis(
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
-
 def create_response(data, status_code):
     response = make_response(jsonify(data), status_code)
     response.headers["X-Database-Info"] = f"Operat pe DB: {DB_NAME} (Server Port: {SERVER_PORT})"
     return response
 
+# ---- rute de test ----
+@app.route("/ping")
+def ping():
+    return {"status": "ok", "message": "server2 este in viata"}, 200
+
+@app.route("/debug/db")
+def debug_db():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT 1;")
+                row = cursor.fetchone()
+        return {"status": "ok", "db_result": row[0]}, 200
+    except Exception as e:
+        print("[DEBUG][DB2] Eroare:", e)
+        return {"status": "error", "message": str(e)}, 500
+
+# ---- CRUD exact ca la server1 ----
 
 @app.route("/employee/<int:employee_id>", methods=["GET"])
 def get_employee(employee_id):
@@ -58,7 +77,6 @@ def get_employee(employee_id):
         return create_response(data, 200)
     return create_response({"error": "Employee not found"}, 404)
 
-
 @app.route("/employees", methods=["GET"])
 def get_all_employees():
     employees_list = []
@@ -70,7 +88,6 @@ def get_all_employees():
                     {"id": row[0], "name": row[1], "position": row[2]}
                 )
     return create_response(employees_list, 200)
-
 
 @app.route("/employee", methods=["POST"])
 def add_employee():
@@ -92,7 +109,6 @@ def add_employee():
     }
     redis_cache.publish("db_sync_channel", json.dumps(notification))
     return create_response(new_data, 201)
-
 
 @app.route("/employee/<int:employee_id>", methods=["PUT"])
 def update_employee(employee_id):
@@ -123,7 +139,6 @@ def update_employee(employee_id):
     redis_cache.delete(f"employee:{employee_id}")
     return create_response(updated_data, 200)
 
-
 @app.route("/employee/<int:employee_id>", methods=["DELETE"])
 def delete_employee(employee_id):
     with get_db_connection() as conn:
@@ -143,7 +158,6 @@ def delete_employee(employee_id):
     redis_cache.delete(f"employee:{employee_id}")
     return create_response({"success": True, "deleted_id": employee_id}, 200)
 
-
 if __name__ == "__main__":
-    print(f"--- Server 1 pornește pe portul {SERVER_PORT} ---")
+    print(f"--- Server 2 pornește pe portul {SERVER_PORT} ---")
     app.run(host="0.0.0.0", port=SERVER_PORT)
