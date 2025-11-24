@@ -9,6 +9,11 @@ SERVER_PORT = int(os.environ.get("PORT", 5001))
 DB_NAME = os.environ.get("DB_NAME", "db1")
 app = Flask(__name__)
 
+@app.route("/ping")
+def ping():
+    return {"status": "ok", "message": "server1 este in viata"}, 200
+
+
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST", "localhost"),
     "port": os.environ.get("DB_PORT", "5431"),
@@ -31,6 +36,29 @@ redis_cache = redis.Redis(
 
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
+
+@app.route("/debug/db")
+def debug_db():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT 1;")
+                row = cursor.fetchone()
+        return {"status": "ok", "db_result": row[0]}, 200
+    except Exception as e:
+        print("[DEBUG][DB] Eroare:", e)
+        return {"status": "error", "message": str(e)}, 500
+
+
+@app.route("/debug/redis")
+def debug_redis():
+    try:
+        redis_cache.ping()
+        return {"status": "ok", "redis": "pong"}, 200
+    except Exception as e:
+        print("[DEBUG][REDIS] Eroare:", e)
+        return {"status": "error", "message": str(e)}, 500
+
 
 
 def create_response(data, status_code):
