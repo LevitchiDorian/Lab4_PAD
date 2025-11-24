@@ -15,14 +15,12 @@ SERVERS = [s.strip() for s in servers_env.split(",") if s.strip()]
 server_pool = cycle(SERVERS)
 
 
-# 🟢 1) Ruta pentru pagina HTML (root)
 @app.route("/", methods=["GET"])
 def index():
-    # Caută client.html în același director cu load_balancer.py
-    return send_from_directory(".", "client.html")
+    return send_from_directory(".", "client_web.html")
 
 
-# 🔁 2) Proxy pentru toate celelalte rute (/employees, /employee/1 etc.)
+
 @app.route("/<path:path>", methods=["GET", "POST", "PUT", "DELETE"])
 def route_request(path):
     server_url = next(server_pool)
