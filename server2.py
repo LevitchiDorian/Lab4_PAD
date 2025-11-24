@@ -33,6 +33,25 @@ redis_cache = redis.Redis(
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
+
+@app.route("/debug/which_db")
+def which_db():
+    with get_db_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT current_database(),
+                       inet_server_addr(),
+                       inet_server_port();
+            """)
+            db_name, db_host, db_port = cursor.fetchone()
+
+    return {
+        "db_name": db_name,
+        "db_host": str(db_host),
+        "db_port": db_port
+    }, 200
+
+
 def create_response(data, status_code):
     response = make_response(jsonify(data), status_code)
     response.headers["X-Database-Info"] = f"Operat pe DB: {DB_NAME} (Server Port: {SERVER_PORT})"
