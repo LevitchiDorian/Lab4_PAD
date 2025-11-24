@@ -46,7 +46,7 @@
             padding: 7px 10px;
             border-radius: 5px;
             border: 1px solid #d1d5db;
-            width: 200px;
+            width: 220px;
             margin-right: 10px;
         }
 
@@ -59,6 +59,7 @@
             font-weight: 600;
             cursor: pointer;
             margin-right: 8px;
+            margin-top: 5px;
         }
 
         button:hover {
@@ -102,13 +103,17 @@
             font-size: 13px;
             color: #374151;
         }
+
+        .row {
+            margin-top: 6px;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>Client Web - Sistem CRUD cu Load Balancer</h1>
     <p class="small-info">
-        Această pagină HTML trimite cereri către API-ul tău prin Load Balancer (port 5000).
+        Această pagină HTML trimite cereri către API-ul tău prin Load Balancer.
     </p>
 
     <!-- Config general -->
@@ -121,7 +126,7 @@
 
     <!-- Căutare după ID -->
     <div class="section">
-        <h2>Căutare angajat după ID</h2>
+        <h2>[R] Căutare angajat după ID</h2>
         <label for="empIdInput">ID angajat:</label>
         <input type="number" id="empIdInput" placeholder="ex: 1" />
         <button onclick="getEmployeeById()">Caută după ID</button>
@@ -129,23 +134,55 @@
 
     <!-- Lista completă -->
     <div class="section">
-        <h2>Lista tuturor angajaților</h2>
-        <button onclick="getAllEmployees()">Afișează toți</button>
+        <h2>[R] Lista tuturor angajaților</h2>
+        <button onclick="getAllEmployees()">Afișează toți / Refresh</button>
     </div>
 
     <!-- Adăugare angajat -->
     <div class="section">
-        <h2>Adaugă angajat nou</h2>
-        <div>
+        <h2>[C] Adaugă angajat nou</h2>
+        <div class="row">
             <label for="newName">Nume:</label>
             <input type="text" id="newName" placeholder="ex: Ana Popescu" />
         </div>
-        <div style="margin-top: 8px;">
+        <div class="row">
             <label for="newPosition">Poziție:</label>
             <input type="text" id="newPosition" placeholder="ex: Developer" />
         </div>
-        <div style="margin-top: 10px;">
+        <div class="row">
             <button onclick="addEmployee()">Adaugă</button>
+        </div>
+    </div>
+
+    <!-- Modificare angajat -->
+    <div class="section">
+        <h2>[U] Modifică angajat existent</h2>
+        <div class="row">
+            <label for="updId">ID angajat:</label>
+            <input type="number" id="updId" placeholder="ex: 1" />
+        </div>
+        <div class="row">
+            <label for="updName">Nume nou:</label>
+            <input type="text" id="updName" placeholder="ex: Ion Ionescu" />
+        </div>
+        <div class="row">
+            <label for="updPosition">Poziție nouă:</label>
+            <input type="text" id="updPosition" placeholder="ex: QA Engineer" />
+        </div>
+        <div class="row">
+            <button onclick="updateEmployee()">Modifică</button>
+        </div>
+    </div>
+
+    <!-- Ștergere angajat -->
+    <div class="section">
+        <h2>[D] Șterge angajat</h2>
+        <div class="row">
+            <label for="delId">ID angajat:</label>
+            <input type="number" id="delId" placeholder="ex: 1" />
+        </div>
+        <div class="row">
+            <button onclick="deleteEmployee()">Șterge</button>
         </div>
     </div>
 
@@ -158,11 +195,15 @@
 </div>
 
 <script>
-    // !!! SCHIMBĂ CU IP-UL DROPLET-ULUI TĂU !!!
-    const API_BASE_URL = "https://load-balancer-url.railway.app";
 
-    document.getElementById("api-base-url").innerText = API_BASE_URL;
+    const API_BASE_URL = "https://lab4pad-production.up.railway.app";
 
+        document.getElementById("api-base-url").innerText =
+        window.location.origin; 
+
+
+
+    // GET /employee/{id}
     async function getEmployeeById() {
         const id = document.getElementById("empIdInput").value.trim();
         if (!id) {
@@ -178,6 +219,7 @@
         }
     }
 
+    // GET /employees
     async function getAllEmployees() {
         try {
             const resp = await fetch(`${API_BASE_URL}/employees`);
@@ -187,6 +229,7 @@
         }
     }
 
+    // POST /employee
     async function addEmployee() {
         const name = document.getElementById("newName").value.trim();
         const position = document.getElementById("newPosition").value.trim();
@@ -207,10 +250,69 @@
                 body: JSON.stringify(payload)
             });
             await handleResponse(resp);
+            // opțional: refresh listă
+            // await getAllEmployees();
         } catch (e) {
             showStatus("Eroare de rețea: " + e, true);
         }
     }
+
+    // PUT /employee/{id}
+    async function updateEmployee() {
+        const id = document.getElementById("updId").value.trim();
+        const name = document.getElementById("updName").value.trim();
+        const position = document.getElementById("updPosition").value.trim();
+
+        if (!id) {
+            showStatus("Te rog introdu ID-ul angajatului de modificat.", true);
+            return;
+        }
+        if (!name || !position) {
+            showStatus("Numele nou și poziția nouă sunt obligatorii.", true);
+            return;
+        }
+
+        const payload = { name, position };
+
+        try {
+            const resp = await fetch(`${API_BASE_URL}/employee/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+            await handleResponse(resp);
+        } catch (e) {
+            showStatus("Eroare de rețea: " + e, true);
+        }
+    }
+
+    // DELETE /employee/{id}
+    async function deleteEmployee() {
+        const id = document.getElementById("delId").value.trim();
+        if (!id) {
+            showStatus("Te rog introdu ID-ul angajatului de șters.", true);
+            return;
+        }
+
+        const confirmDelete = confirm(`Ești sigur că vrei să ștergi angajatul cu ID=${id}?`);
+        if (!confirmDelete) {
+            showStatus("Operația de ștergere a fost anulată.", false);
+            return;
+        }
+
+        try {
+            const resp = await fetch(`${API_BASE_URL}/employee/${id}`, {
+                method: "DELETE"
+            });
+            await handleResponse(resp);
+        } catch (e) {
+            showStatus("Eroare de rețea: " + e, true);
+        }
+    }
+
+    // ========== HANDLERE GENERALE ==========
 
     async function handleResponse(resp) {
         const dbInfo = resp.headers.get("X-Database-Info") || "N/A";
@@ -239,7 +341,7 @@
     function renderData(data) {
         const output = document.getElementById("output");
 
-        // Dacă e listă de angajați
+        // listă de angajați
         if (Array.isArray(data)) {
             if (data.length === 0) {
                 output.textContent = "Nu există angajați în baza de date.";
@@ -247,7 +349,7 @@
             }
             output.innerHTML = buildTableHtml(data);
         } else if (data && typeof data === "object") {
-            // Un singur angajat sau un obiect generic
+            // un singur angajat sau alt obiect
             if ("id" in data && "name" in data && "position" in data) {
                 output.innerHTML = buildTableHtml([data]);
             } else {
@@ -259,7 +361,7 @@
     }
 
     function buildTableHtml(employees) {
-        let html = "<table><thead><tr><th>ID</th><th>Nume</th><th Pozitie</th></tr></thead><tbody>";
+        let html = "<table><thead><tr><th>ID</th><th>Nume</th><th>Pozitie</th></tr></thead><tbody>";
         for (const emp of employees) {
             html += `<tr>
                         <td>${emp.id ?? ""}</td>
