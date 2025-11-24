@@ -70,6 +70,6 @@ def route_request(path: str):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT", 5000))
     print(f"--- Load Balancer pornește pe portul {port} (Railway/local) ---")
     app.run(host="0.0.0.0", port=port)
