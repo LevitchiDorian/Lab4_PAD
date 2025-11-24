@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="ro">
+    
 <head>
     <meta charset="UTF-8" />
     <title>Client Web - Employees</title>
+    
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -109,6 +111,11 @@
         }
     </style>
 </head>
+
+<script>
+    document.getElementById("api-base-url").innerText = window.location.origin;
+</script>
+
 <body>
 <div class="container">
     <h1>Client Web - Sistem CRUD cu Load Balancer</h1>

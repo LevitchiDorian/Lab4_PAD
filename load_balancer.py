@@ -15,13 +15,14 @@ SERVERS = [s.strip() for s in servers_env.split(",") if s.strip()]
 server_pool = cycle(SERVERS)
 
 
-
+# 🟢 1) Ruta pentru pagina HTML (root)
 @app.route("/", methods=["GET"])
 def index():
+    # Caută client.html în același director cu load_balancer.py
     return send_from_directory(".", "client.html")
 
 
-
+# 🔁 2) Proxy pentru toate celelalte rute (/employees, /employee/1 etc.)
 @app.route("/<path:path>", methods=["GET", "POST", "PUT", "DELETE"])
 def route_request(path):
     server_url = next(server_pool)
@@ -39,7 +40,7 @@ def route_request(path):
         return f"Service Unavailable: {e}", 503
 
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 8080))  # Railway setează PORT, dar default 8080
     print(f"--- Load Balancer pornește pe portul {port} (Railway) ---")
     app.run(host="0.0.0.0", port=port)
