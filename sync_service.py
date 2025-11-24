@@ -4,7 +4,6 @@ import json
 import redis
 import psycopg2
 
-
 # Config pentru cele două baze de date
 DB_CONFIGS = {
     "db1": {
@@ -23,10 +22,10 @@ DB_CONFIGS = {
     },
 }
 
-# Config pentru Redis
+# Config Redis (la fel ca la servere)
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
-REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")  # poate fi None
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 
 redis_client = redis.Redis(
     host=REDIS_HOST,
@@ -37,11 +36,8 @@ redis_client = redis.Redis(
 
 
 def synchronize_data(message):
-    """
-    Funcția care primește mesajul din Redis și îl aplică pe baza de date țintă.
-    """
     try:
-        # Mesajele de la pubsub au mai multe tipuri; noi vrem doar cele cu type='message'
+        # Redis pubsub mai trimite și type='subscribe' etc, le ignorăm
         if message.get("type") != "message":
             return
 
@@ -55,8 +51,7 @@ def synchronize_data(message):
             print("[Sync Service] Mesaj incomplet, ignor...")
             return
 
-        # Dacă vine de la db1 -> replicăm în db2
-        # Dacă vine de la db2 -> replicăm în db1
+        # db1 -> replicăm în db2; db2 -> replicăm în db1
         target_db_name = "db2" if source_db == "db1" else "db1"
 
         print(

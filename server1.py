@@ -5,15 +5,18 @@ import redis
 import json
 import os
 
+# Portul pe care rulează serverul (Railway setează PORT)
 SERVER_PORT = int(os.environ.get("PORT", 5001))
+
+# Numele bazei de date reale (pe Railway o să fie "railway")
 DB_NAME = os.environ.get("DB_NAME", "db1")
+
+# IDENTITATE LOGICĂ a serverului în sistemul nostru (folosită pentru sync)
+DB_ID = "db1"
+
 app = Flask(__name__)
 
-@app.route("/ping")
-def ping():
-    return {"status": "ok", "message": "server1 este in viata"}, 200
-
-
+# Config conexiune Postgres
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST", "localhost"),
     "port": os.environ.get("DB_PORT", "5431"),
@@ -22,6 +25,7 @@ DB_CONFIG = {
     "password": os.environ.get("DB_PASSWORD", "app_password"),
 }
 
+# Config Redis
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")  # poate fi None
@@ -34,8 +38,23 @@ redis_cache = redis.Redis(
     decode_responses=True,
 )
 
+
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
+
+
+def create_response(data, status_code):
+    """Helper pentru răspuns JSON + header cu info de DB."""
+    response = make_response(jsonify(data), status_code)
+    response.headers["X-Database-Info"] = f"Operat pe DB: {DB_NAME} (Server ID: {DB_ID}, Port: {SERVER_PORT})"
+    return response
+
+
+# ---- RUTE DE TEST ----
+@app.route("/ping")
+def ping():
+    return {"status": "ok", "message": "server1 este in viata"}, 200
+
 
 @app.route("/debug/db")
 def debug_db():
@@ -46,7 +65,7 @@ def debug_db():
                 row = cursor.fetchone()
         return {"status": "ok", "db_result": row[0]}, 200
     except Exception as e:
-        print("[DEBUG][DB] Eroare:", e)
+        print("[DEBUG][DB1] Eroare:", e)
         return {"status": "error", "message": str(e)}, 500
 
 
@@ -60,12 +79,7 @@ def debug_redis():
         return {"status": "error", "message": str(e)}, 500
 
 
-
-def create_response(data, status_code):
-    response = make_response(jsonify(data), status_code)
-    response.headers["X-Database-Info"] = f"Operat pe DB: {DB_NAME} (Server Port: {SERVER_PORT})"
-    return response
-
+# ---- CRUD ----
 
 @app.route("/employee/<int:employee_id>", methods=["GET"])
 def get_employee(employee_id):
@@ -117,7 +131,7 @@ def add_employee():
     notification = {
         "operation": "insert",
         "data": new_data,
-        "source_db": DB_NAME,
+        "source_db": DB_ID,   # <- IMPORTANT: db1 logic
     }
     redis_cache.publish("db_sync_channel", json.dumps(notification))
     return create_response(new_data, 201)
@@ -146,7 +160,7 @@ def update_employee(employee_id):
     notification = {
         "operation": "update",
         "data": updated_data,
-        "source_db": DB_NAME,
+        "source_db": DB_ID,
     }
     redis_cache.publish("db_sync_channel", json.dumps(notification))
     redis_cache.delete(f"employee:{employee_id}")
@@ -166,7 +180,7 @@ def delete_employee(employee_id):
     notification = {
         "operation": "delete",
         "data": {"id": employee_id},
-        "source_db": DB_NAME,
+        "source_db": DB_ID,
     }
     redis_cache.publish("db_sync_channel", json.dumps(notification))
     redis_cache.delete(f"employee:{employee_id}")
