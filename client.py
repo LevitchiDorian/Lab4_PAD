@@ -3,7 +3,7 @@ import sys
 import time
 import os
 
-LOAD_BALANCER_URL = os.environ.get("LOAD_BALANCER_URL", "https://server2-production-00a0.up.railway.app")
+LOAD_BALANCER_URL = os.environ.get("LOAD_BALANCER_URL", "https://lab4pad-production.up.railway.app")
 LINE_SEPARATOR = "-" * 70
 
 
