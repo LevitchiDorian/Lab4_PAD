@@ -117,8 +117,14 @@
 </script>
 
 <body>
-<div class="container">
 
+    <!-- Config general -->
+    <div class="section">
+        <strong>Config API:</strong>
+        <div class="small-info">
+            API Base URL: <span id="api-base-url"></span>
+        </div>
+    </div>
 
     <!-- Căutare după ID -->
     <div class="section">
@@ -139,11 +145,11 @@
         <h2>[C] Adaugă angajat nou</h2>
         <div class="row">
             <label for="newName">Nume:</label>
-            <input type="text" id="newName" placeholder="ex: Test" />
+            <input type="text" id="newName" placeholder="ex: Ana Popescu" />
         </div>
         <div class="row">
             <label for="newPosition">Poziție:</label>
-            <input type="text" id="newPosition" placeholder="ex: Test" />
+            <input type="text" id="newPosition" placeholder="ex: Developer" />
         </div>
         <div class="row">
             <button onclick="addEmployee()">Adaugă</button>
@@ -159,11 +165,11 @@
         </div>
         <div class="row">
             <label for="updName">Nume nou:</label>
-            <input type="text" id="updName" placeholder="ex: Test" />
+            <input type="text" id="updName" placeholder="ex: Ion Ionescu" />
         </div>
         <div class="row">
             <label for="updPosition">Poziție nouă:</label>
-            <input type="text" id="updPosition" placeholder="ex: Test" />
+            <input type="text" id="updPosition" placeholder="ex: QA Engineer" />
         </div>
         <div class="row">
             <button onclick="updateEmployee()">Modifică</button>
@@ -186,6 +192,7 @@
     <div class="section">
         <h2>Rezultat</h2>
         <div id="status" class="status-line"></div>
+        <div id="output">Aici vor apărea rezultatele cererilor.</div>
     </div>
 </div>
 
@@ -245,6 +252,8 @@ const API_BASE_URL = "https://lab4pad-production.up.railway.app";
                 body: JSON.stringify(payload)
             });
             await handleResponse(resp);
+            // opțional: refresh listă
+            // await getAllEmployees();
         } catch (e) {
             showStatus("Eroare de rețea: " + e, true);
         }
