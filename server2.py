@@ -5,18 +5,12 @@ import redis
 import json
 import os
 
-# Railway pune PORT, local fallback = 5002
 SERVER_PORT = int(os.environ.get("PORT", 5002))
-
-# Numele bazei reale (pe Railway = "railway")
 DB_NAME = os.environ.get("DB_NAME", "db2")
-
-# IDENTITATE LOGICĂ pentru sync
 DB_ID = "db2"
 
 app = Flask(__name__)
 
-# Config DB2
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST", "localhost"),
     "port": os.environ.get("DB_PORT", "5432"),
@@ -25,7 +19,6 @@ DB_CONFIG = {
     "password": os.environ.get("DB_PASSWORD", "app_password"),
 }
 
-# Config Redis (același ca la server1)
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
@@ -49,7 +42,7 @@ def create_response(data, status_code):
     return response
 
 
-# ---- RUTE TEST ----
+
 @app.route("/ping")
 def ping():
     return {"status": "ok", "message": "server2 este in viata"}, 200
@@ -89,7 +82,6 @@ def which_db():
     }, 200
 
 
-# ---- CRUD identic cu server1 ----
 
 @app.route("/employee/<int:employee_id>", methods=["GET"])
 def get_employee(employee_id):

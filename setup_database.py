@@ -1,4 +1,4 @@
-# setup_databases.py
+
 import psycopg2
 import time
 import os

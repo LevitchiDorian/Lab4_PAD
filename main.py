@@ -1,6 +1,6 @@
-# main.py
+
 import os
-from load_balancer import app  # importă Flask app-ul tău din load_balancer.py
+from load_balancer import app  
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

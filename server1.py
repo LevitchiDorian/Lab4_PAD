@@ -5,18 +5,13 @@ import redis
 import json
 import os
 
-# Portul pe care rulează serverul (Railway setează PORT)
+
 SERVER_PORT = int(os.environ.get("PORT", 5001))
-
-# Numele bazei de date reale (pe Railway o să fie "railway")
 DB_NAME = os.environ.get("DB_NAME", "db1")
-
-# IDENTITATE LOGICĂ a serverului în sistemul nostru (folosită pentru sync)
 DB_ID = "db1"
 
 app = Flask(__name__)
 
-# Config conexiune Postgres
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST", "localhost"),
     "port": os.environ.get("DB_PORT", "5431"),
@@ -25,10 +20,9 @@ DB_CONFIG = {
     "password": os.environ.get("DB_PASSWORD", "app_password"),
 }
 
-# Config Redis
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
-REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")  # poate fi None
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")  
 
 redis_cache = redis.Redis(
     host=REDIS_HOST,
@@ -50,7 +44,6 @@ def create_response(data, status_code):
     return response
 
 
-# ---- RUTE DE TEST ----
 @app.route("/ping")
 def ping():
     return {"status": "ok", "message": "server1 este in viata"}, 200
